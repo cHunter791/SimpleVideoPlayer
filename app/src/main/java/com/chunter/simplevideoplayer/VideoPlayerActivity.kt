@@ -3,15 +3,18 @@ package com.chunter.simplevideoplayer
 import android.content.ComponentName
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.ViewGroup
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.core.pip.PictureInPictureDelegate
 import androidx.core.pip.VideoPlaybackPictureInPicture
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.media3.cast.MediaRouteButtonViewProvider
+import androidx.media3.cast.MediaRouteButtonFactory
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MediaMetadata.MEDIA_TYPE_VIDEO
@@ -19,14 +22,47 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
+import androidx.mediarouter.app.MediaRouteButton
+import com.google.android.material.snackbar.Snackbar
+import com.google.common.util.concurrent.FutureCallback
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.MoreExecutors
+import java.util.concurrent.Executor
 
 @OptIn(UnstableApi::class)
 class VideoPlayerActivity : AppCompatActivity() {
 
+    private val root: ViewGroup
+        get() = findViewById(R.id.main)
+
     private val playerView: PlayerView
         get() = findViewById(R.id.player)
+
+    private val castButton: MediaRouteButton
+        get() = findViewById(R.id.castButton)
+
+    private val executor: Executor
+        get() = ContextCompat.getMainExecutor(this)
+
+    private val pictureInPictureListener =
+        object : PictureInPictureDelegate.OnPictureInPictureEventListener {
+            override fun onPictureInPictureEvent(
+                event: PictureInPictureDelegate.Event,
+                config: Configuration?
+            ) {
+                if (event == PictureInPictureDelegate.Event.ENTER_ANIMATION_START) {
+                    playerView.hideController()
+                }
+
+                if (event == PictureInPictureDelegate.Event.EXITED) {
+                    playerView.showController()
+                }
+            }
+        }
+    private val controllerVisibilityListener =
+        PlayerView.ControllerVisibilityListener { visibility ->
+            castButton.visibility = visibility
+        }
 
     private lateinit var videoPlaybackPip: VideoPlaybackPictureInPicture
 
@@ -47,31 +83,60 @@ class VideoPlayerActivity : AppCompatActivity() {
             SessionToken(this, ComponentName(this, MediaService::class.java))
         ).buildAsync()
 
-        mediaControllerFuture?.addListener({
-            mediaController = mediaControllerFuture?.get()
-            playerView.player = mediaController
+        Futures.addCallback<MediaController>(
+            mediaControllerFuture!!,
+            object : FutureCallback<MediaController> {
+                override fun onSuccess(result: MediaController?) {
+                    if (result == null) {
+                        displayErrorSnackbar()
+                        return
+                    }
 
-            val metadata = MediaMetadata.Builder()
-                .setTitle(TITLE)
-                .setSubtitle(SUBTITLE)
-                .setMediaType(MEDIA_TYPE_VIDEO)
-                .setArtworkUri(THUMBNAIL.toUri())
-                .setDurationMs(635000L)
-                .build()
-            val mediaItem = MediaItem.Builder()
-                .setUri(VIDEO_URL)
-                .setMediaMetadata(metadata)
-                .build()
+                    mediaController = result
+                    playerView.player = result
 
-            mediaController?.setMediaItem(mediaItem)
-            mediaController?.prepare()
-            mediaController?.play()
-        }, MoreExecutors.directExecutor())
+                    if (result.currentMediaItem != null) return
 
-        playerView.setMediaRouteButtonViewProvider(MediaRouteButtonViewProvider())
+                    val metadata = MediaMetadata.Builder()
+                        .setTitle(TITLE)
+                        .setSubtitle(SUBTITLE)
+                        .setMediaType(MEDIA_TYPE_VIDEO)
+                        .setArtworkUri(THUMBNAIL.toUri())
+                        .setDurationMs(635000L)
+                        .build()
+                    val mediaItem = MediaItem.Builder()
+                        .setUri(VIDEO_URL)
+                        .setMediaMetadata(metadata)
+                        .build()
+
+                    result.setMediaItem(mediaItem)
+                    result.prepare()
+                    result.play()
+                }
+
+                override fun onFailure(t: Throwable) {
+                    displayErrorSnackbar()
+                }
+
+                private fun displayErrorSnackbar() {
+                    Snackbar.make(
+                        this@VideoPlayerActivity,
+                        root,
+                        "Failed to connect to media controller",
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
+            },
+            executor,
+        )
+
+        MediaRouteButtonFactory.setUpMediaRouteButton(this, castButton)
+
+        playerView.setControllerVisibilityListener(controllerVisibilityListener)
 
         videoPlaybackPip = VideoPlaybackPictureInPicture(this)
         videoPlaybackPip.setPlayerView(playerView)
+        videoPlaybackPip.addOnPictureInPictureEventListener(executor, pictureInPictureListener)
     }
 
     override fun onStop() {
@@ -83,6 +148,7 @@ class VideoPlayerActivity : AppCompatActivity() {
             mediaController = null
         }
         mediaControllerFuture = null
+        videoPlaybackPip.removeOnPictureInPictureEventListener(pictureInPictureListener)
     }
 
     override fun onRestart() {

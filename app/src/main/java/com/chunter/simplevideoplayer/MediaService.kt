@@ -52,7 +52,7 @@ class MediaService : MediaSessionService(), SessionManagerListener<CastSession> 
 
         exoPlayer = ExoPlayer.Builder(this).build()
         castPlayer = CastPlayer.Builder(this).setLocalPlayer(exoPlayer).build()
-        mediaSession = MediaSession.Builder(this, exoPlayer).build()
+        mediaSession = MediaSession.Builder(this, castPlayer).build()
 
         castContext = CastContext.getSharedInstance(this)
         castContext?.sessionManager
@@ -113,7 +113,6 @@ class MediaService : MediaSessionService(), SessionManagerListener<CastSession> 
         error: Int
     ) {
         Log.d(TAG, "onSessionEnded: $error")
-        mediaSession?.player = exoPlayer
     }
 
     override fun onSessionEnding(session: CastSession) {
@@ -153,7 +152,6 @@ class MediaService : MediaSessionService(), SessionManagerListener<CastSession> 
         sessionId: String
     ) {
         Log.d(TAG, "onSessionStarted: $sessionId")
-        mediaSession?.player = castPlayer
     }
 
     override fun onSessionStarting(session: CastSession) {

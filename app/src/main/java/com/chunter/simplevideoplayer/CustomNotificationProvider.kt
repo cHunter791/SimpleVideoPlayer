@@ -15,10 +15,6 @@ class CustomNotificationProvider(private val context: Context) : MediaNotificati
 
     private val defaultProvider = DefaultMediaNotificationProvider(context)
 
-    init {
-        defaultProvider.setSmallIcon(R.drawable.ic_launcher_foreground)
-    }
-
     override fun getNotificationChannelInfo(): MediaNotification.Provider.NotificationChannelInfo {
         return defaultProvider.notificationChannelInfo
     }
