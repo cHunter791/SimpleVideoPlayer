@@ -33,7 +33,6 @@
             android:name=".VideoPlayerActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:exported="false"
-            android:screenOrientation="sensorLandscape"
             android:supportsPictureInPicture="true" />
 
         <service
