@@ -18,6 +18,7 @@ import androidx.media3.cast.MediaRouteButtonFactory
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MediaMetadata.MEDIA_TYPE_VIDEO
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -106,6 +107,7 @@ class VideoPlayerActivity : AppCompatActivity() {
                         .build()
                     val mediaItem = MediaItem.Builder()
                         .setUri(VIDEO_URL)
+                        .setMimeType(MimeTypes.APPLICATION_MPD)
                         .setMediaMetadata(metadata)
                         .build()
 

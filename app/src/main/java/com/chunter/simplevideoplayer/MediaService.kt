@@ -1,22 +1,28 @@
 package com.chunter.simplevideoplayer
 
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.cast.CastPlayer
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import com.google.android.gms.cast.SessionState
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.SessionTransferCallback
+import com.google.common.util.concurrent.ListenableFuture
 
 @OptIn(UnstableApi::class)
-class MediaService : MediaSessionService(), SessionManagerListener<CastSession> {
+class MediaService : MediaSessionService(), SessionManagerListener<CastSession>,
+    MediaSession.Callback {
 
     private var mediaSession: MediaSession? = null
     private var castContext: CastContext? = null
@@ -52,28 +58,14 @@ class MediaService : MediaSessionService(), SessionManagerListener<CastSession> 
 
         exoPlayer = ExoPlayer.Builder(this).build()
         castPlayer = CastPlayer.Builder(this).setLocalPlayer(exoPlayer).build()
-        mediaSession = MediaSession.Builder(this, castPlayer).build()
+        mediaSession = MediaSession.Builder(this, castPlayer)
+            .setCallback(this)
+            .build()
 
         castContext = CastContext.getSharedInstance(this)
         castContext?.sessionManager
             ?.addSessionManagerListener(this, CastSession::class.java)
         castContext?.addSessionTransferCallback(sessionTransferCallback)
-    }
-
-    /**
-     * This method is called when the system determines that the service is no longer used and is being removed.
-     * It checks the player's state and if the player is not ready to play or there are no items in the media queue, it stops the service.
-     *
-     * @param rootIntent The original root Intent that was used to launch the task that is being removed.
-     */
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession?.player ?: return
-
-        // Check if the player is not ready to play or there are no items in the media queue
-        if (!player.playWhenReady || player.mediaItemCount == 0) {
-            // Stop the service
-            stopSelf()
-        }
     }
 
     /**
@@ -85,11 +77,6 @@ class MediaService : MediaSessionService(), SessionManagerListener<CastSession> 
      */
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
-    }
-
-    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
-        super.onUpdateNotification(session, startInForegroundRequired)
-        Log.d(TAG, "onUpdateNotification")
     }
 
     override fun onDestroy() {
@@ -106,6 +93,104 @@ class MediaService : MediaSessionService(), SessionManagerListener<CastSession> 
         }
 
         super.onDestroy()
+    }
+
+    override fun onConnect(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo
+    ): MediaSession.ConnectionResult {
+        Log.d(TAG, "onConnect")
+        return super.onConnect(session, controller)
+    }
+
+    override fun onPostConnect(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo
+    ) {
+        super.onPostConnect(session, controller)
+        Log.d(TAG, "onPostConnect")
+    }
+
+    override fun onDisconnected(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo
+    ) {
+        super.onDisconnected(session, controller)
+        Log.d(TAG, "onDisconnected")
+    }
+
+    override fun onCustomCommand(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        customCommand: SessionCommand,
+        args: Bundle
+    ): ListenableFuture<SessionResult> {
+        Log.d(TAG, "onCustomCommand")
+        return super.onCustomCommand(session, controller, customCommand, args)
+    }
+
+    override fun onCustomCommand(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        customCommand: SessionCommand,
+        args: Bundle,
+        progressReporter: MediaSession.ProgressReporter?
+    ): ListenableFuture<SessionResult> {
+        Log.d(TAG, "onCustomCommand")
+        return super.onCustomCommand(session, controller, customCommand, args, progressReporter)
+    }
+
+    override fun onAddMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: List<MediaItem>
+    ): ListenableFuture<List<MediaItem>> {
+        Log.d(TAG, "onAddMediaItems")
+        return super.onAddMediaItems(mediaSession, controller, mediaItems)
+    }
+
+    override fun onSetMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: List<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        Log.d(TAG, "onSetMediaItems")
+        return super.onSetMediaItems(
+            mediaSession,
+            controller,
+            mediaItems,
+            startIndex,
+            startPositionMs
+        )
+    }
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        isForPlayback: Boolean
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        Log.d(TAG, "onPlaybackResumption")
+        return super.onPlaybackResumption(mediaSession, controller, isForPlayback)
+    }
+
+    override fun onMediaButtonEvent(
+        session: MediaSession,
+        controllerInfo: MediaSession.ControllerInfo,
+        intent: Intent
+    ): Boolean {
+        Log.d(TAG, "onMediaButtonEvent")
+        return super.onMediaButtonEvent(session, controllerInfo, intent)
+    }
+
+    override fun onPlayerInteractionFinished(
+        session: MediaSession,
+        controllerInfo: MediaSession.ControllerInfo,
+        playerCommands: Player.Commands
+    ) {
+        super.onPlayerInteractionFinished(session, controllerInfo, playerCommands)
+        Log.d(TAG, "onPlayerInteractionFinished")
     }
 
     override fun onSessionEnded(

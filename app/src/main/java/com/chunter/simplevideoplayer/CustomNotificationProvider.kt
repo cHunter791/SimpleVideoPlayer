@@ -28,10 +28,7 @@ class CustomNotificationProvider(private val context: Context) : MediaNotificati
         val mediaNotification = defaultProvider.createNotification(
             mediaSession, customLayout, actionFactory, onNotificationChangedCallback
         )
-
         val player = mediaSession.player
-
-        // Rebuild using NotificationCompat.Builder, copying channel from default
         val notification = Notification.Builder(
             context,
             mediaNotification.notification.channelId
@@ -44,7 +41,6 @@ class CustomNotificationProvider(private val context: Context) : MediaNotificati
             .setSmallIcon(androidx.media3.session.R.drawable.media3_icon_play)
             .setContentTitle(player.mediaMetadata.title)
             .setContentText(player.mediaMetadata.subtitle)
-            .setSubText(context.getString(R.string.app_name))
             .setOngoing(player.isPlaying)
             .apply {
                 mediaNotification.notification.actions?.forEach { action -> addAction(action) }

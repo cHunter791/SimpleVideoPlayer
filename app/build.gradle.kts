@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.media3.ui)
     implementation(libs.media3.session)
     implementation(libs.media3.cast)
+    implementation(libs.media.router)
     implementation(libs.play.cast)
 
     testImplementation(libs.junit)
