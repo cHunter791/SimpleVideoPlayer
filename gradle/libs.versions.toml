@@ -1,6 +1,6 @@
 [versions]
 agp = "9.2.1"
-androidx-core = "1.18.0"
+androidx-core = "1.19.0"
 androidx-pip = "1.0.0-alpha02"
 androidx-activity = "1.13.0"
 androidx-constraintlayout = "2.2.1"

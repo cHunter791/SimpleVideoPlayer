@@ -3,10 +3,12 @@ package com.chunter.simplevideoplayer
 import android.content.ComponentName
 import android.content.res.Configuration
 import android.os.Bundle
-import android.view.ViewGroup
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.pip.PictureInPictureDelegate
@@ -32,7 +34,7 @@ import java.util.concurrent.Executor
 @OptIn(UnstableApi::class)
 class VideoPlayerActivity : AppCompatActivity() {
 
-    private val root: ViewGroup
+    private val root: ConstraintLayout
         get() = findViewById(R.id.main)
 
     private val playerView: PlayerView
@@ -162,6 +164,16 @@ class VideoPlayerActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         adjustFullScreen(newConfig)
+
+        val constraintSet = ConstraintSet()
+        constraintSet.clone(root)
+        constraintSet.connect(
+            R.id.player,
+            ConstraintSet.BOTTOM,
+            if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) PARENT_ID else R.id.videoHeightGuide,
+            ConstraintSet.BOTTOM
+        )
+        constraintSet.applyTo(root)
     }
 
 
